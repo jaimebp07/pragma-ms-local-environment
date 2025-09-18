@@ -1,0 +1,121 @@
+version: '3.9'
+services:
+  # === Bases de datos PostgreSQL ===
+  postgres-auth:
+    image: postgres:16.1
+    container_name: crediya_users_db
+    restart: always
+    environment:
+        DB_HOST: postgres-auth
+        DB_PORT: 5432
+        POSTGRES_USER: admin
+        POSTGRES_PASSWORD: authentication
+        POSTGRES_DB: postgres
+        DB_SCHEMA: credi_ya
+    ports:
+      - "5434:5432"          # puerto expuesto en tu host
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+      - ./autenticacion/local/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
+      - ./autenticacion/local/sql/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - micro_net
+
+  postgres-solicitudes:
+    image: postgres:16.1
+    container_name: crediya_solicitudes_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: loanapplications
+      POSTGRES_DB: credi_ya
+    ports:
+      - "5435:5432"
+    volumes:
+      - sol_db_data:/var/lib/postgresql/data
+      - ./solicitudes/local/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
+      - ./solicitudes/local/sql/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - micro_net
+
+  # === PgAdmin opcional ===
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "81:80"
+    depends_on:
+      - postgres-auth
+      - postgres-solicitudes
+    networks:
+      - micro_net
+
+  # === Microservicio Autenticación ===
+  autenticacion:
+    build:
+      context: https://github.com/jaimebp07/pragma-ms-authentication.git#HU5
+      dockerfile: Dockerfile
+    container_name: autenticacion
+    depends_on:
+      - postgres-auth
+    environment:
+        SPRING_PROFILES_ACTIVE: docker
+        DB_HOST: postgres-auth
+        DB_PORT: 5432
+        DB_NAME: postgres
+        DB_SCHEMA: credi_ya
+        DB_USER: admin
+        DB_PASSWORD: authentication
+        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/postgres
+        SPRING_DATASOURCE_USERNAME: admin
+        SPRING_DATASOURCE_PASSWORD: authentication
+    ports:
+      - "8080:8080"
+    networks:
+      - micro_net
+
+  # === Microservicio Solicitudes ===
+  solicitudes:
+    build:
+      context: https://github.com/jaimebp07/pragma-ms-loan-application.git#HU5
+      dockerfile: Dockerfile
+    container_name: solicitudes
+    depends_on:
+      - postgres-solicitudes
+      - autenticacion
+    environment:
+        SPRING_PROFILES_ACTIVE: docker
+        DB_HOST: postgres-solicitudes
+        DB_PORT: 5432
+        DB_NAME: postgres
+        DB_USER: admin
+        DB_PASSWORD: loanapplications
+        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-solicitudes:5432/postgres
+        SPRING_DATASOURCE_USERNAME: admin
+        SPRING_DATASOURCE_PASSWORD: loanapplications
+        AUTENTICACION_URL: http://autenticacion:8080
+    ports:
+      - "8082:8082"
+    networks:
+      - micro_net
+
+volumes:
+  auth_db_data:
+  sol_db_data:
+
+networks:
+  micro_net:
+    driver: bridge
