@@ -1,23 +1,23 @@
 version: '3.9'
 services:
   # === Bases de datos PostgreSQL ===
-  postgres-auth:
+  db_authentication:
     image: postgres:16.1
-    container_name: crediya_users_db
+    container_name: db_authentication
     restart: always
     environment:
-        DB_HOST: postgres-auth
+        DB_HOST: db_authentication
         DB_PORT: 5432
         POSTGRES_USER: admin
-        POSTGRES_PASSWORD: authentication
+        POSTGRES_PASSWORD: db_authentication
         POSTGRES_DB: postgres
-        DB_SCHEMA: credi_ya
     ports:
       - "5434:5432"          # puerto expuesto en tu host
     volumes:
       - auth_db_data:/var/lib/postgresql/data
-      - ./autenticacion/local/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
-      - ./autenticacion/local/sql/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+      - ./db-authentication/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
+      - ./db-authentication/sql/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+    
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
       interval: 5s
@@ -26,20 +26,20 @@ services:
     networks:
       - micro_net
 
-  postgres-solicitudes:
+  db_loanapplications: #select * from credi_ya.loan_applications;
     image: postgres:16.1
-    container_name: crediya_solicitudes_db
+    container_name: db_loanapplications
     restart: always
     environment:
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: loanapplications
-      POSTGRES_DB: credi_ya
+      POSTGRES_PASSWORD: db_loanapplications
+      POSTGRES_DB: postgres
     ports:
       - "5435:5432"
     volumes:
-      - sol_db_data:/var/lib/postgresql/data
-      - ./solicitudes/local/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
-      - ./solicitudes/local/sql/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+      - loan_db_data:/var/lib/postgresql/data
+      - ./db-loan-application/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
+      - ./db-loan-application/sql/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
       interval: 5s
@@ -58,55 +58,58 @@ services:
     ports:
       - "81:80"
     depends_on:
-      - postgres-auth
-      - postgres-solicitudes
+      - db_authentication
+      - db_loanapplications
     networks:
       - micro_net
 
   # === Microservicio Autenticación ===
-  autenticacion:
+  ms_authentication:
     build:
       context: https://github.com/jaimebp07/pragma-ms-authentication.git#HU5
+      #context: ./pragma-ms-authentication
       dockerfile: Dockerfile
-    container_name: autenticacion
+    container_name: ms_authentication
     depends_on:
-      - postgres-auth
+      - db_authentication
     environment:
         SPRING_PROFILES_ACTIVE: docker
-        DB_HOST: postgres-auth
+        DB_HOST: db_authentication
         DB_PORT: 5432
         DB_NAME: postgres
         DB_SCHEMA: credi_ya
         DB_USER: admin
-        DB_PASSWORD: authentication
-        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/postgres
+        DB_PASSWORD: db_authentication
+        SPRING_DATASOURCE_URL: jdbc:postgresql://db_authentication:5432/postgres
         SPRING_DATASOURCE_USERNAME: admin
-        SPRING_DATASOURCE_PASSWORD: authentication
+        SPRING_DATASOURCE_PASSWORD: db_authentication
     ports:
       - "8080:8080"
     networks:
       - micro_net
 
   # === Microservicio Solicitudes ===
-  solicitudes:
+  ms_loanapplications:
     build:
       context: https://github.com/jaimebp07/pragma-ms-loan-application.git#HU5
+      #context: ./pragma-ms-loan-application
       dockerfile: Dockerfile
-    container_name: solicitudes
+    container_name: ms_loanapplications
     depends_on:
-      - postgres-solicitudes
-      - autenticacion
+      - db_loanapplications
+      - ms_authentication
     environment:
         SPRING_PROFILES_ACTIVE: docker
-        DB_HOST: postgres-solicitudes
+        DB_HOST: db_loanapplications
         DB_PORT: 5432
         DB_NAME: postgres
         DB_USER: admin
-        DB_PASSWORD: loanapplications
-        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-solicitudes:5432/postgres
+        DB_PASSWORD: db_loanapplications
+        SPRING_DATASOURCE_URL: jdbc:postgresql://db_loanapplications:5432/postgres
         SPRING_DATASOURCE_USERNAME: admin
-        SPRING_DATASOURCE_PASSWORD: loanapplications
-        AUTENTICACION_URL: http://autenticacion:8080
+        SPRING_DATASOURCE_PASSWORD: db_loanapplications
+        AUTHENTICATION_URL: http://ms_authentication:8080
+
     ports:
       - "8082:8082"
     networks:
@@ -114,7 +117,7 @@ services:
 
 volumes:
   auth_db_data:
-  sol_db_data:
+  loan_db_data:
 
 networks:
   micro_net:
