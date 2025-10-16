@@ -4,18 +4,19 @@ set -e
 echo "Empaquetando lambdas..."
 
 cd lambdas
-./package_lambda.sh automatic_loan_validation
+./package_lambda.sh notification_loan_decision
+#./package_lambda.sh automatic_loan_validation
 cd ..
 
 echo "Lambda empaquetada correctamente."
 
-#echo "Desplegando infraestructura AWS..."
+echo "Desplegando infraestructura AWS..."
 
-#cd terraform
+cd terraform
 
 # Inicializa y aplica Terraform
-#terraform init -input=false
-#terraform apply -auto-approve -input=false
+terraform init -input=false
+terraform apply -auto-approve -input=false
 
 # Captura los outputs
 #SQS_RESULT_QUEUE_URL=$(terraform output -raw sqs_result_queue_url)
