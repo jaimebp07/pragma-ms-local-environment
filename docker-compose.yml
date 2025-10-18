@@ -9,6 +9,7 @@ services:
     volumes:
       - ~/.aws:/root/.aws:ro
       - ./shared:/shared
+      - infra_terraform_state:/app/terraform
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -84,7 +85,7 @@ services:
   # === Microservicio Autenticación ===
   ms_authentication:
     build:
-      context: https://github.com/jaimebp07/pragma-ms-authentication.git#HU5
+      context: https://github.com/jaimebp07/pragma-ms-authentication.git
       #context: ./pragma-ms-authentication
       dockerfile: Dockerfile
     container_name: ms_authentication
@@ -110,7 +111,7 @@ services:
   # === Microservicio Solicitudes ===
   ms_loanapplications:
     build:
-      context: https://github.com/jaimebp07/pragma-ms-loan-application.git#HU5
+      context: https://github.com/jaimebp07/pragma-ms-loan-application.git#HU7
       #context: ./pragma-ms-loan-application
       dockerfile: Dockerfile
     container_name: ms_loanapplications
@@ -118,6 +119,8 @@ services:
       - db_loanapplications
       - ms_authentication
       - infra_deployer
+    env_file:
+      - ./shared/.env
     environment:
         SPRING_PROFILES_ACTIVE: docker
         DB_HOST: db_loanapplications
@@ -138,6 +141,7 @@ services:
 volumes:
   auth_db_data:
   loan_db_data:
+  infra_terraform_state:
 
 networks:
   micro_net:

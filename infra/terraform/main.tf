@@ -93,7 +93,7 @@ resource "aws_lambda_event_source_mapping" "sqs_event_source" {
 
 ############################################################
 # 8️ Output: mostrar URL de la cola SQS
-output "sqs_result_queue_url" {
+output "sqs_decision_queue_url" {
   value = aws_sqs_queue.loan_decision_queue.url
   description = "URL pública de la cola SQS loan-decision-queue"
 }
