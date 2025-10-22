@@ -1,11 +1,11 @@
 version: '3.9'
 services:
   # === Infraestructura AWS
-  infra_deployer:
+  infradeployer:
     build: # Allows to build an image from local Dockerfile.
       context: infra
       dockerfile: Dockerfile
-    container_name: infra_deployer
+    container_name: infradeployer
     volumes:
       - ~/.aws:/root/.aws:ro
       - ./shared:/shared
@@ -20,15 +20,13 @@ services:
       - micro_net
 
   # === Bases de datos PostgreSQL ===
-  db_authentication:
+  dbauthentication:
     image: postgres:16.1
-    container_name: db_authentication
+    container_name: dbauthentication
     restart: always
     environment:
-        DB_HOST: db_authentication
-        DB_PORT: 5432
         POSTGRES_USER: admin
-        POSTGRES_PASSWORD: db_authentication
+        POSTGRES_PASSWORD: dbauthentication
         POSTGRES_DB: postgres
     ports:
       - "5434:5432"          # puerto expuesto en tu host
@@ -45,13 +43,13 @@ services:
     networks:
       - micro_net
 
-  db_loanapplications: #select * from credi_ya.loan_applications;
+  dbloanapplications: #select * from credi_ya.loan_applications;
     image: postgres:16.1
-    container_name: db_loanapplications
+    container_name: dbloanapplications
     restart: always
     environment:
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: db_loanapplications
+      POSTGRES_PASSWORD: dbloanapplications
       POSTGRES_DB: postgres
     ports:
       - "5435:5432"
@@ -77,62 +75,64 @@ services:
     ports:
       - "81:80"
     depends_on:
-      - db_authentication
-      - db_loanapplications
+      - dbauthentication
+      - dbloanapplications
     networks:
       - micro_net
 
   # === Microservicio Autenticación ===
-  ms_authentication:
+  msauthentication:
     build:
       context: https://github.com/jaimebp07/pragma-ms-authentication.git
       #context: ./pragma-ms-authentication
       dockerfile: Dockerfile
-    container_name: ms_authentication
+    container_name: msauthentication
     depends_on:
-      - db_authentication
-      - infra_deployer
+      - dbauthentication
+      - infradeployer
     environment:
         SPRING_PROFILES_ACTIVE: docker
-        DB_HOST: db_authentication
+        DB_HOST: dbauthentication
         DB_PORT: 5432
         DB_NAME: postgres
         DB_SCHEMA: credi_ya
         DB_USER: admin
-        DB_PASSWORD: db_authentication
-        SPRING_DATASOURCE_URL: jdbc:postgresql://db_authentication:5432/postgres
+        DB_PASSWORD: dbauthentication
+        SPRING_DATASOURCE_URL: jdbc:postgresql://dbauthentication:5432/postgres
         SPRING_DATASOURCE_USERNAME: admin
-        SPRING_DATASOURCE_PASSWORD: db_authentication
+        SPRING_DATASOURCE_PASSWORD: dbauthentication
     ports:
       - "8080:8080"
     networks:
       - micro_net
 
   # === Microservicio Solicitudes ===
-  ms_loanapplications:
+  msloanapplications:
     build:
-      context: https://github.com/jaimebp07/pragma-ms-loan-application.git#HU7
+      context: https://github.com/jaimebp07/pragma-ms-loan-application.git
       #context: ./pragma-ms-loan-application
       dockerfile: Dockerfile
-    container_name: ms_loanapplications
+    container_name: msloanapplications
     depends_on:
-      - db_loanapplications
-      - ms_authentication
-      - infra_deployer
+      - dbloanapplications
+      - msauthentication
+      - infradeployer
     env_file:
       - ./shared/.env
     environment:
         SPRING_PROFILES_ACTIVE: docker
-        DB_HOST: db_loanapplications
+        DB_HOST: dbloanapplications
         DB_PORT: 5432
         DB_NAME: postgres
         DB_USER: admin
-        DB_PASSWORD: db_loanapplications
-        SPRING_DATASOURCE_URL: jdbc:postgresql://db_loanapplications:5432/postgres
+        DB_PASSWORD: dbloanapplications
+        SPRING_DATASOURCE_URL: jdbc:postgresql://dbloanapplications:5432/postgres
         SPRING_DATASOURCE_USERNAME: admin
-        SPRING_DATASOURCE_PASSWORD: db_loanapplications
-        AUTHENTICATION_URL: http://ms_authentication:8080
-
+        SPRING_DATASOURCE_PASSWORD: dbloanapplications
+        AUTHENTICATION_URL: http://msauthentication:8080
+        AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+        AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+        AWS_REGION: ${AWS_REGION}
     ports:
       - "8082:8082"
     networks:

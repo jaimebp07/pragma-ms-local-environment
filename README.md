@@ -57,7 +57,7 @@ aws sts get-caller-identity
 
 Si quiere ejectutar el proyecto de forma local con la infraestructura desplegada en AWS puede ejecutar el siguiente comando desde powershell
 ```sh
- docker-compose up infra_deployer
+ docker-compose up infradeployer
 ```
 
 #### Ejecutar proyecto completo en docker
@@ -70,7 +70,7 @@ docker-compose up
 
 * Compilar imágenes sin levantarlas
 ```sh
-docker-compose build
+docker-compose build --no-cache
 ```
 
 * compilar y levantar de una vez, ideal en el primer arranque o tras cambios de código
@@ -79,5 +79,6 @@ docker-compose up --build
 ```
 
 Comandos que si funcionan desde ubuntu
-docker compose build infra_deployer
-docker compose run --rm -it infra_deployer bash
+docker compose build infradeployer
+docker compose run --rm -it 
+infradeployer bash
