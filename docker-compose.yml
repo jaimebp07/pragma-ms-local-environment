@@ -13,6 +13,7 @@ services:
       - .env
     networks:
       - micro_net
+    restart: "no" 
 
   # === Bases de datos PostgreSQL ===
   dbauthentication:
@@ -109,11 +110,15 @@ services:
       dockerfile: Dockerfile
     container_name: msloanapplications
     depends_on:
-      - dbloanapplications
-      - msauthentication
-      - infradeployer
+      dbloanapplications:
+        condition: service_healthy
+      infradeployer:
+        condition: service_completed_successfully
+      msauthentication:
+        condition: service_started
     env_file:
-      - ./shared/.env
+      - .env                              #Credenciales de AWS
+      - ./shared/msloanapplications.env   # variables generadas por terraform (SQS, SNS, etc.)
     environment:
         SPRING_PROFILES_ACTIVE: docker
         DB_HOST: dbloanapplications
@@ -125,9 +130,6 @@ services:
         SPRING_DATASOURCE_USERNAME: admin
         SPRING_DATASOURCE_PASSWORD: dbloanapplications
         AUTHENTICATION_URL: http://msauthentication:8080
-        AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-        AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-        AWS_REGION: ${AWS_REGION}
     ports:
       - "8082:8082"
     networks:

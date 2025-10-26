@@ -49,7 +49,7 @@ cd ..
 
 # Crea el archivo .env compartido
 mkdir -p /shared
-cat <<EOF > /shared/.env
+cat <<EOF > /shared/msloanapplications.env
 SQS_DECISION_QUEUE_URL=${SQS_DECISION_QUEUE_URL}
 EOF
 #SNS_TOPIC_ARN=${SNS_TOPIC_ARN}
@@ -57,4 +57,4 @@ EOF
 
 echo "✅ Infraestructura desplegada correctamente."
 echo "📄 Archivo .env generado con variables de entorno:"
-cat /shared/.env
+cat /shared/msloanapplications.env
