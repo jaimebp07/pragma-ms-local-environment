@@ -1,6 +1,19 @@
 #!/bin/bash
 set -e
 
+echo "🔍 Verificando credenciales AWS..."
+
+echo "AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID"
+echo "AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY"
+echo "AWS_REGION: $AWS_REGION"
+
+aws sts get-caller-identity --output text >/dev/null 2>&1 || {
+  echo "❌ Error: Las credenciales AWS no son válidas o no fueron cargadas."
+  exit 1
+}
+echo "✅ Credenciales AWS válidas."
+
+
 echo "Empaquetando lambdas..."
 
 cd lambdas
@@ -14,6 +27,14 @@ echo "Desplegando infraestructura AWS..."
 
 cd terraform
 
+echo "🌍 Verificando variables de entorno antes de Terraform:"
+env | grep AWS
+
+echo "🧹 Limpiando configuración previa de Terraform..."
+rm -rf .terraform .terraform.lock.hcl
+
+echo "🚀 Ejecutando Terraform..."
+
 # Inicializa y aplica Terraform
 terraform init -input=false
 terraform apply -auto-approve -input=false
@@ -21,6 +42,8 @@ terraform apply -auto-approve -input=false
 # Captura los outputs
 SQS_DECISION_QUEUE_URL=$(terraform output -raw sqs_decision_queue_url)
 #SNS_TOPIC_ARN=$(terraform output -raw sns_topic_arn)
+
+echo "SQS_DECISION_QUEUE_URL: $SQS_DECISION_QUEUE_URL"
 
 cd ..
 

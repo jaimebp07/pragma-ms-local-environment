@@ -7,15 +7,10 @@ services:
       dockerfile: Dockerfile
     container_name: infradeployer
     volumes:
-      - ~/.aws:/root/.aws:ro
       - ./shared:/shared
       - infra_terraform_state:/app/terraform
-    environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION=${AWS_REGION}
-    #working_dir: /app/infra
-    #command: ["bash", "deploy_all.sh"]
+    env_file:
+      - .env
     networks:
       - micro_net
 
@@ -29,7 +24,7 @@ services:
         POSTGRES_PASSWORD: dbauthentication
         POSTGRES_DB: postgres
     ports:
-      - "5434:5432"          # puerto expuesto en tu host
+      - "5434:5432"         
     volumes:
       - auth_db_data:/var/lib/postgresql/data
       - ./local-databases/db-authentication/sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql:ro
