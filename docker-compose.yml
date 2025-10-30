@@ -11,6 +11,7 @@ services:
       - infra_terraform_state:/app/terraform
     env_file:
       - .env
+    entrypoint: ["bash", "deploy_infra.sh"]
     networks:
       - micro_net
     restart: "no" 

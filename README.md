@@ -73,6 +73,11 @@ docker-compose build --no-cache
 docker-compose up --build
 ```
 
+* Para actualizar recursos (sin destruir)
+```bash
+docker compose build infradeployer --no-cache
+docker compose run --rm infradeployer update
+```
 Comandos que si funcionan desde ubuntu
 docker compose build infradeployer
 docker compose run --rm -it 

@@ -49,6 +49,11 @@ resource "aws_sqs_queue" "loan_decision_queue" {
   visibility_timeout_seconds = 30
 }
 
+resource "aws_sqs_queue" "loan_capacity_result_queue" {
+  name = "loan-capacity-result-queue"
+  visibility_timeout_seconds = 30
+}
+
 ############################################################
 # 5️ Función Lambda: notification-loan-decision
 resource "aws_lambda_function" "notification_loan_decision" {
@@ -95,4 +100,9 @@ resource "aws_lambda_event_source_mapping" "sqs_event_source" {
 output "sqs_decision_queue_url" {
   value = aws_sqs_queue.loan_decision_queue.url
   description = "URL pública de la cola SQS loan-decision-queue"
+}
+
+output "sqs_capacity_result_queue_url" {
+  value = aws_sqs_queue.loan_capacity_result_queue.url
+  description = "URL pública de la cola SQS loan-capacity-result-queue"
 }
