@@ -42,6 +42,7 @@ terraform apply -auto-approve -input=false
 
 # Captura los outputs
 SQS_DECISION_QUEUE_URL=$(terraform output -raw sqs_decision_queue_url)
+SQS_CAPACITY_RESULT_QUEUE_URL=$(terraform output -raw sqs_capacity_result_queue_url || echo "")
 #SNS_TOPIC_ARN=$(terraform output -raw sns_topic_arn)
 
 echo "SQS_DECISION_QUEUE_URL: $SQS_DECISION_QUEUE_URL"
@@ -52,6 +53,7 @@ cd ..
 mkdir -p /shared
 cat <<EOF > /shared/msloanapplications.env
 SQS_DECISION_QUEUE_URL=${SQS_DECISION_QUEUE_URL}
+SQS_CAPACITY_RESULT_QUEUE_URL=${SQS_CAPACITY_RESULT_QUEUE_URL}
 EOF
 #SNS_TOPIC_ARN=${SNS_TOPIC_ARN}
 #EOF
