@@ -33,10 +33,11 @@ env | grep AWS
 echo "🧹 Limpiando configuración previa de Terraform..."
 rm -rf .terraform .terraform.lock.hcl
 
-echo "🚀 Ejecutando Terraform..."
+echo "🧩 Configurando backend remoto (S3 + DynamoDB)..."
+bash ./init_backend.sh
 
-# Inicializa y aplica Terraform
-terraform init -input=false
+echo "🚀 Inicializando Terraform con backend remoto..."
+terraform init -input=false -reconfigure
 terraform apply -auto-approve -input=false
 
 # Captura los outputs

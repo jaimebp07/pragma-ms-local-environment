@@ -8,7 +8,6 @@ services:
     container_name: infradeployer
     volumes:
       - ./shared:/shared
-      - infra_terraform_state:/app/terraform
     env_file:
       - .env
     networks:
@@ -138,7 +137,6 @@ services:
 volumes:
   auth_db_data:
   loan_db_data:
-  infra_terraform_state:
 
 networks:
   micro_net:
