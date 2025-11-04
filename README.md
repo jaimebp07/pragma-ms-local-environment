@@ -10,27 +10,127 @@
 🧩 1. Crear una politica personalizada que contenga los permisos mínimos para crear tus recursos (Lambda, SQS, IAM, CloudWatch, etc.)
 ``` json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "TerraformLambdaInfraPolicy",
-      "Effect": "Allow",
-      "Action": [
-        "iam:CreateRole",
-        "iam:AttachRolePolicy",
-        "iam:PutRolePolicy",
-        "iam:GetRole",
-        "iam:ListRolePolicies",
-        "iam:PassRole",
-        "lambda:*",
-        "sqs:*",
-        "sns:*",
-        "cloudwatch:*",
-        "logs:*"
-      ],
-      "Resource": "*"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "LambdaAndExecution",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:CreateFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:GetFunction",
+                "lambda:DeleteFunction",
+                "lambda:ListFunctions",
+                "lambda:listversionsbyfunction",
+                "lambda:getfunctioncodesigningconfig",
+                "lambda:AddPermission",
+                "lambda:RemovePermission",
+                "lambda:getpolicy",
+                "lambda:geteventsourceMapping",
+                "lambda:listeventsourcemappings",
+                "lambda:listtags"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "LogsAndMonitoring",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "cloudwatch:PutMetricData",
+                "cloudwatch:GetMetricData",
+                "cloudwatch:ListMetrics"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SQSAccess",
+            "Effect": "Allow",
+            "Action": [
+                "sqs:CreateQueue",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+                "sqs:ListQueues",
+                "sqs:SendMessage",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage",
+                "sqs:PurgeQueue",
+                "sqs:listqueuetags"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SNSAccess",
+            "Effect": "Allow",
+            "Action": [
+                "sns:CreateTopic",
+                "sns:DeleteTopic",
+                "sns:Publish",
+                "sns:Subscribe",
+                "sns:GetTopicAttributes",
+                "sns:SetTopicAttributes",
+                "sns:ListTopics",
+                "sns:ListSubscriptionsByTopic",
+                "sns:listtagsforresource",
+                "sns:getsubscriptionattributes"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IamRoleManagement",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:PassRole",
+                "iam:CreateRole",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:CreatePolicy",
+                "iam:getpolicy",
+                "iam:getpolicyversion",
+                "iam:listpolicyversions",
+                "iam:deletepolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "TerraformBackendS3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+                "s3:CreateBucket",
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:PutBucketVersioning"
+            ],
+            "Resource": [
+                "arn:aws:s3:::terraform-state-crediya",
+                "arn:aws:s3:::terraform-state-crediya/*"
+            ]
+        },
+        {
+            "Sid": "TerraformLockDynamoDB",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:CreateTable",
+                "dynamodb:DescribeTable",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:Scan",
+                "dynamodb:UpdateItem"
+            ],
+            "Resource": "arn:aws:dynamodb:us-east-2:484558640369:table/terraform-locks-crediya"
+        }
+    ]
 }
 ```
 👥 2. Crear un grupo IAM (por ejemplo crediya_terraform_group) y agregar las politicas creadas anteriormente.

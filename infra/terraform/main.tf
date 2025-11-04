@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 ############################################################
-# 2 Rol de ejecución (IAM Role) para la Lambda
+# 1 Rol I AM lambda
 resource "aws_iam_role" "lambda_exec" {
   name = "lambda_exec_role"
 
@@ -21,7 +21,21 @@ resource "aws_iam_role" "lambda_exec" {
 }
 
 ############################################################
-# 3 Adjuntar políticas predefinidas al rol IAM
+# 4 Crear SNS Topic para notificación de decisiones
+resource "aws_sns_topic" "loan_decision_topic" {
+  name = "loan-decision-topic"
+  display_name = "Loan Decision Notifications"
+}
+
+resource "aws_sns_topic_subscription" "loan_decision_email_subscription" {
+  topic_arn = aws_sns_topic.loan_decision_topic.arn
+  protocol  = "email"
+  endpoint  = "andrescodigo07@gmail.com"
+}
+
+
+############################################################
+# 2 Adjuntar políticas predefinidas al rol IAM
 # Permite a la Lambda escribir logs en CloudWatch
 resource "aws_iam_role_policy_attachment" "lambda_basic_exec" {
   role       = aws_iam_role.lambda_exec.name
@@ -34,14 +48,30 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_exec" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
 }
 
-# Permite a la Lambda publicar mensajes en SNS
-resource "aws_iam_role_policy_attachment" "lambda_sns_exec" {
+# Política personalizada: solo publicar en este SNS topic
+resource "aws_iam_policy" "lambda_publish_sns_policy" {
+  name        = "lambda-publish-sns-policy"
+  description = "Permite a la Lambda publicar en el topic SNS de decisiones de préstamo"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["sns:Publish"]
+        Resource = "${aws_sns_topic.loan_decision_topic.arn}"
+      }
+    ]
+  })
+}
+
+# Adjuntar la política personalizada al rol
+resource "aws_iam_role_policy_attachment" "lambda_publish_sns" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+  policy_arn = aws_iam_policy.lambda_publish_sns_policy.arn
 }
 
 ############################################################
-# 4️ Cola SQS donde llegarán los mensajes
+# 3 Cola SQS donde llegarán los mensajes
 resource "aws_sqs_queue" "loan_decision_queue" {
   name = "loan-decision-queue"
 
@@ -54,6 +84,7 @@ resource "aws_sqs_queue" "loan_capacity_result_queue" {
   visibility_timeout_seconds = 30
 }
 
+
 ############################################################
 # 5️ Función Lambda: notification-loan-decision
 resource "aws_lambda_function" "notification_loan_decision" {
@@ -61,17 +92,14 @@ resource "aws_lambda_function" "notification_loan_decision" {
   runtime       = "python3.9"
   handler       = "handler.lambda_handler"
 
-  # Ruta relativa al ZIP generado en el contenedor Docker
   filename         = "../lambdas/notification_loan_decision.zip"
   source_code_hash = filebase64sha256("../lambdas/notification_loan_decision.zip")
 
-  # Rol IAM que la Lambda utilizará
   role = aws_iam_role.lambda_exec.arn
 
-  # Variables de entorno que la Lambda puede usar
   environment {
     variables = {
-      TOPIC_ARN = "arn:aws:sns:us-east-2:484558640369:loan-decision-topic"
+      TOPIC_ARN = aws_sns_topic.loan_decision_topic.arn
     }
   }
 }
@@ -96,7 +124,7 @@ resource "aws_lambda_event_source_mapping" "sqs_event_source" {
 }
 
 ############################################################
-# 8️ Output: mostrar URL de la cola SQS
+# 8 Output: mostrar URL de la cola SQS
 output "sqs_decision_queue_url" {
   value = aws_sqs_queue.loan_decision_queue.url
   description = "URL pública de la cola SQS loan-decision-queue"
@@ -105,4 +133,9 @@ output "sqs_decision_queue_url" {
 output "sqs_capacity_result_queue_url" {
   value = aws_sqs_queue.loan_capacity_result_queue.url
   description = "URL pública de la cola SQS loan-capacity-result-queue"
+}
+
+output "sns_topic_arn" {
+  value       = aws_sns_topic.loan_decision_topic.arn
+  description = "ARN del SNS Topic para notificaciones de decisiones"
 }

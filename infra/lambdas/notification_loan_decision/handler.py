@@ -5,8 +5,7 @@ import os
 sns = boto3.client("sns")
 
 def lambda_handler(event, context):
-    topic_arn = os.environ.get("TOPIC_ARN", 
-        "arn:aws:sns:us-east-2:484558640369:loan-decision-topic")  # Obtiene la variable de entorno TOPIC_ARN, si no existe utiliza el valor por defecto
+    topic_arn = os.environ.get("TOPIC_ARN")  # Obtiene la variable de entorno TOPIC_ARN, si no existe utiliza el valor por defecto
 
     for record in event.get("Records", []):
         try:
